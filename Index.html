@@ -1,0 +1,158 @@
+<!DOCTYPE html><html><head><title>fly bird 1</title><meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui=1"><meta charset="UTF-8"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content=""><link rel="manifest" href="manifest.json"><link rel="icon" type="image/png" href="icon64.png"><link rel="apple-touch-icon" sizes="180x180" href="icon180.png"><link rel="icon" type="image/png" sizes="32x32" href="icon32.png"><link rel="icon" type="image/png" sizes="16x16" href="icon16.png"><style>html,body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  overflow:hidden;
+  font-family: Verdana;
+}
+.noselect {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+#canvaswrapper {
+  text-align: center ;
+}
+</style><style>@font-face { font-family: "BitCell" ; src: url("fonts/BitCell.ttf") format("truetype"); }</style><script>window.fonts = ["BitCell"]</script></head><body class="noselect custom-cursor" oncontextmenu="return false;"><div id="canvaswrapper"></div><script type="text/javascript">var resources = {"images":[{"file":"bird.png","version":190,"size":316,"properties":{"frames":1,"fps":5}},{"file":"icon.png","version":117,"size":30513,"properties":{"frames":1,"fps":5}},{"file":"pipe.png","version":44,"size":217,"properties":{"frames":1,"fps":5}},{"file":"sky.png","version":28,"size":236,"properties":{"frames":1,"fps":5}}],"assets":[],"maps":{},"sounds":[{"file":"jump.mp3","version":1,"size":3152,"properties":{}}],"music":[]};
+var graphics = "M1";
+
+</script><script type="text/javascript">var orientation = 'any' ;
+var aspect = 'free' ;
+var ms_libs = [] ;
+window.skip_service_worker = true;
+window.exported_project = true;
+window.ms_use_server = false ;
+</script><script src="compiler.js"></script><script src="parser.js"></script><script src="processor.js"></script><script src="program.js"></script><script src="routine.js"></script><script src="runner.js"></script><script src="token.js"></script><script src="tokenizer.js"></script><script src="transpiler.js"></script><script src="microengine.js"></script></body><script type="text/javascript">//
+//
+// The game is started with the code below.
+// Once you have received the "started" signal (see below),
+// you can do the following:
+// 1) Inject functions or objects into the global context of the microStudio engine, example:
+//
+//   window.player.setGlobal("special_callback",function(x) { console.info(x) }) ;
+//   // Your microScript code can now call the "special_callback" function
+//
+// 2) Call microScript global functions from your JavaScript code, example:
+//
+//   window.player.call("call_me_from_javascript",[10,1000]) ;
+//   // arguments to the function call are provided as an array
+//
+// 3) Run a microScript code snippet from your JavaScript code, example:
+//
+//   window.player.exec("player.position_x = 50",function(result) { console.log(result) ; }) ;
+//
+
+window.addEventListener("load",function() {
+  window.player = new Player(function(event) {
+    if (event.name == "started") {
+      // signal that the game is started
+    }
+    else if (event.name == "log") {
+      // console.info(event.data) ;
+    }
+  }) ;
+  document.body.focus() ;
+}) ;
+
+</script><script id="code" type="text/x-microscript">
+
+
+// file: main.ms
+function()
+init = function()
+  -- Bird physics
+  bird_y = 0        
+  bird_vy = 0       
+  gravity = -0.15   
+  flap_power = 3    
+  
+  -- Pipes and Levels
+  pipe_x = 150      
+  pipe_gap = 80      
+  pipe_y = 0        
+  speed = 2          
+  
+  -- Game variables
+  score = 0
+  level = 1
+  game_over = 0     
+end
+
+update = function()
+  if game_over == 0 then
+    -- 1. Physics
+    bird_vy += gravity
+    bird_y += bird_vy
+    
+    -- 2. Controls
+    -- touch.press detects a single tap on your screen
+        if touch.press or mouse.click or keyboard.press.SPACE then
+
+      bird_vy = flap_power
+      audio.playSound("jump")
+    end
+    
+    -- 3. Pipe Movement
+    pipe_x -= speed
+    if pipe_x < -150 then
+      pipe_x = 150
+      pipe_y = random.next() * 100 - 50
+      score += 1
+      
+      -- Level Up Logic (Every 3 points)
+      if level < 20 and score % 3 == 0 then
+        level += 1
+        speed += 0.3
+        pipe_gap -= 2
+      end
+    end
+    
+    -- 4. Collision Detection
+    if bird_y < -100 or bird_y > 100 then
+      audio.playSound("hit")
+      game_over = 1
+    end
+    
+    if abs(pipe_x - (-50)) < 15 then 
+      if abs(bird_y - pipe_y) > pipe_gap/2 then
+        audio.playSound("hit")
+        game_over = 1
+      end
+    end
+    else
+    if mouse.pressed or keyboard.press.SPACE then
+      init()
+    end
+  end
+end
+
+
+draw = function()
+  -- Draw background
+  screen.drawSprite("sky", 0, 0, screen.width, screen.height)
+  
+  -- Draw Pipes
+  screen.drawSprite("pipe", pipe_x, pipe_y + (pipe_gap/2 + 70), 30, 140)
+  screen.drawSprite("pipe", pipe_x, pipe_y - (pipe_gap/2 + 70), 30, 140)
+  
+  -- Draw Bird with rotation
+  screen.drawSprite("bird", -50, bird_y, 20, 20, bird_vy * 10)
+  
+  -- Draw UI
+  screen.drawText("SCORE: " + score, -80, 85, 12, "white")
+  screen.drawText("LEVEL: " + level, 70, 85, 12, "yellow")
+  
+  if game_over == 1 then
+    screen.fillRect(0, 0, screen.width, screen.height, "rgba(0,0,0,0.6)")
+    screen.drawText("GAME OVER", 0, 10, 20, "white")
+    screen.drawText("TAP TO RESTART", 0, -30, 12, "white")
+  end
+end
+
+end()
+
+
+</script></html>
